@@ -26,7 +26,7 @@ def cli():
 def disks():
     """Returns a list of Device Ids and Volume Serial Numbers. Use Volume serial number for downloading command."""
     for disk in c.Win32_LogicalDisk():
-        # if disk.Description == "Removable Disk":
+        if disk.Description == "Removable Disk":
             print(f"{disk.DeviceId} - {disk.VolumeSerialNumber}")
 
 
@@ -36,7 +36,7 @@ def download(serial):
     """ When a disk with an the exact volume number is found, start transferring all the files to a temp location
     """
     for disk in c.Win32_LogicalDisk():
-        if (disk.Description == "Removable Disk") and (disk.VolumeSerialNumber == str(serial)):
+        if (disk.Description == "Removable Disk") and (disk.VolumeSerialNumber == serial):
             print("Removal Camera Disk Found")
             print("Get some coffee, this can take a while...")
             copy(disk.DeviceId)
@@ -98,10 +98,6 @@ def move():
     for file in dir_list:
         shutil.move(os.path.join(src, file), os.path.join(dst, file))
     shutil.rmtree(src)
-
-# download()
-# rename()
-# moveToOneDrive()
 
 
 if __name__ == '__main__':
