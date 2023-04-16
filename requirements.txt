@@ -1,0 +1,4 @@
+wmi
+pillow
+image
+click
