@@ -4,17 +4,18 @@ import os
 from time import strftime, localtime
 c = wmi.WMI()
 
-def copy(device_id) -> None:
+
+def copy(src) -> int:
     """ Copy all files in camera directory to users directoy for human processing
     """
-    # bug only works for Windows
-    src = os.path.join(device_id, "\\", "DCIM", "100MSDCF")
     dst = os.path.join(os.path.expanduser('~'), "a6000Temp")
     if os.path.isdir(dst):
         print("found existing temp folder, delete it")
         shutil.rmtree(dst)
     print(f'{src} to {dst}')
     shutil.copytree(src, dst)
+    return len(os.listdir(dst))
+
 
 def download(serial):
     """ When a disk with an the exact volume number is found, start transferring all the files to a temp location
@@ -69,7 +70,8 @@ def rename(dryrun: bool):
             shutil.move(os.path.join(dst, unique_file_rename), os.path.join(
                 dst, unique_file_renames[unique_file_rename]))
 
-def move():
+
+def move() -> None:
     """Moves all files from this temp directory to OneDrive where uploads can start"""
     src = os.path.join(os.path.expanduser('~'), "a6000Temp")
 
@@ -83,8 +85,15 @@ def move():
 
 
 if __name__ == '__main__':
+    #  bug with video
     if os.path.isdir(r'D:\DCIM'):
-        print("found disk")
-        # copy('D:')
-        # rename(False)
-        # move()
+        src = os.path.join("D:", "\\", "DCIM", "100MSDCF")
+        count = len(os.listdir(src))
+        input(f"Found Disk. Files {count}. Press Enter to copy...")
+        copied = copy(src)
+        input(f"Copied {copied}. Press Enter to rename...")
+        rename(False)
+        input(f"Copied {copied}. Press Enter to move...")
+        move()
+        print("Done")
+
