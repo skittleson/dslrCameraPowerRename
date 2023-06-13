@@ -17,18 +17,6 @@ def copy(src) -> int:
     return len(os.listdir(dst))
 
 
-def download(serial):
-    """ When a disk with an the exact volume number is found, start transferring all the files to a temp location
-    """
-    for disk in c.Win32_LogicalDisk():
-        if (disk.Description == "Removable Disk") and (disk.VolumeSerialNumber == serial):
-            print("Removal Camera Disk Found")
-            print("Get some coffee, this can take a while...")
-            copy(disk.DeviceId)
-            print("Done Transferring")
-            print("Review the images wanted. Follow up with rename command")
-
-
 def rename(dryrun: bool):
     """Renames all of the files to a simpler syntax %Y%m%d_%H%M%S_COUNT"""
 
@@ -93,7 +81,7 @@ if __name__ == '__main__':
         copied = copy(src)
         input(f"Copied {copied}. Press Enter to rename...")
         rename(False)
-        input(f"Copied {copied}. Press Enter to move...")
+        input(f"Renamed {copied}. Press Enter to move...")
         move()
-        print("Done")
+        print("Done. Delete all the images on camera to prevent duplications.")
 
