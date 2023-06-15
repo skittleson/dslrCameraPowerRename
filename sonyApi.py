@@ -3,6 +3,9 @@ from libsonyapi.actions import Actions
 import PIL.Image
 import requests
 import PIL.ExifTags
+import cv2
+import numpy as np
+import time
 
 
 def events():
@@ -42,13 +45,13 @@ def tags(img):
     print(exif)
 
 
-def capture_and_download() -> str:
+def capture_and_download(filename="img.jpg") -> str:
     camera = Camera()
     camera.do("setPostviewImageSize", ["Original"])
     response = None
     while response == None:
         response = camera.do(Actions.actTakePicture)
-    return save_img_from_response(response['result'][0][0], 'img.jpg')
+    return save_img_from_response(response['result'][0][0], filename)
 
 
 def save_img_from_response(image_uri: str, filename: str) -> str:
@@ -79,7 +82,7 @@ def download_all():
             img_uri = img_uri.replace(
                 f'{str(image_index)}.JPG', f'{str(new_image_index)}.JPG',)
             image_index = new_image_index
-        except NoImageData as noimagedata:
+        except NoImageData:
             print("Last image processed had no data")
             running = False
         except:
@@ -87,5 +90,42 @@ def download_all():
     print("Done")
 
 
+def super_resolution_basic():
+    # https://github.com/Rudgas/Superresolution
+    capture_and_download("img1.jpg")
+    capture_and_download("img2.jpg")
+    capture_and_download("img3.jpg")
+    capture_and_download("img4.jpg")
+    img1 = cv2.imread("img1.jpg")
+    img2 = cv2.imread("img2.jpg")
+    img3 = cv2.imread("img3.jpg")
+    img4 = cv2.imread("img4.jpg")
+
+
+    start = time.time()
+    upscaled1 = cv2.resize(
+        img1, (img1.shape[1] * 4, img1.shape[0] * 4),	interpolation=cv2.INTER_CUBIC)
+    upscaled2 = cv2.resize(
+        img2, (img2.shape[1] * 4, img2.shape[0] * 4),	interpolation=cv2.INTER_CUBIC)
+    upscaled3 = cv2.resize(
+        img3, (img3.shape[1] * 4, img3.shape[0] * 4),	interpolation=cv2.INTER_CUBIC)
+    upscaled4 = cv2.resize(
+        img4, (img4.shape[1] * 4, img4.shape[0] * 4),	interpolation=cv2.INTER_CUBIC)
+    end = time.time()
+    print(f"[INFO] bicubic resolution took {end - start:.6f} seconds")
+
+    combined_image1 = cv2.addWeighted(upscaled1, 0.5, upscaled2, 0.5, 0)
+    combined_image2 = cv2.addWeighted(upscaled3, 0.5, upscaled4, 0.5, 0)
+    combined_image3 = cv2.addWeighted(combined_image1, 0.5, combined_image2, 0.5, 0)
+    cv2.imwrite("superres.jpg", combined_image3)
+
+    # cv2.imshow('Blended Image', blended_image)
+    # cv2.waitKey(0)
+
+
+def alpha_blend(image1, image2, alpha):
+    return cv2.addWeighted(image1, alpha, image2, 1 - alpha, 0)
+
+
 if __name__ == '__main__':
-    download_all()
+    super_resolution_basic()
