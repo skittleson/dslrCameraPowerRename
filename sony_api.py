@@ -8,14 +8,6 @@ import numpy as np
 import time
 
 
-def events():
-    camera = Camera()  # create camera instance
-    camera_info = camera.info()  # get camera camera_info
-    print(camera_info)
-    # print(camera.do("getAvailablePostviewImageSize"))
-    print(camera.do("setPostviewImageSize", ["Original"]))
-
-
 def analyze_pix():
     camera = Camera()  # create camera instance
     camera_info = camera.info()  # get camera camera_info
@@ -23,17 +15,29 @@ def analyze_pix():
     print(camera.services)
     print(camera.name)  # print name of camera
     print(camera.api_version)  # print api version of camera
+    print(camera.do("getAvailableFocusMode"))
+    camera.do(Actions.setFocusMode, "MF")
     camera.do("setPostviewImageSize", ["Original"])
-    response = camera.do(Actions.actTakePicture)  # take a picture
-    print(response)
-    image_uri = response['result'][0][0]
-    print(image_uri)
-    img_data = requests.get(image_uri).content
-    with open('img.jpg', 'wb') as handler:
-        handler.write(img_data)
+    # camera.do(Actions.stopLiveview)
+    time.sleep(1)
+    start = time.time()
+    camera.do(Actions.actTakePicture)
+    camera.do(Actions.actTakePicture)
+    camera.do(Actions.actTakePicture)
+    camera.do(Actions.actTakePicture)
+    end = time.time()
+    print(f"[INFO] 4 photos took {end - start:.6f} seconds")
 
-    img = PIL.Image.open('img.jpg')
-    tags(tags)
+    # response = camera.do(Actions.actTakePicture)  # take a picture
+    # print(response)
+    # image_uri = response['result'][0][0]
+    # print(image_uri)
+    # img_data = requests.get(image_uri).content
+    # with open('img.jpg', 'wb') as handler:
+    #     handler.write(img_data)
+
+    # img = PIL.Image.open('img.jpg')
+    # tags(tags)
 
 
 def tags(img):
@@ -52,6 +56,23 @@ def capture_and_download(filename="img.jpg") -> str:
     while response == None:
         response = camera.do(Actions.actTakePicture)
     return save_img_from_response(response['result'][0][0], filename)
+
+
+def capture(camera: Camera) -> str:
+    camera = Camera()
+    response = None
+    while response == None:
+        response = camera.do(Actions.actTakePicture)
+    return response['result'][0][0]
+
+
+def download_image(image_uri: str, filename: str) -> None:
+    img_data = requests.get(image_uri).content
+    print(len(img_data))
+    if len(img_data) <= 0:
+        raise NoImageData()
+    with open(filename, 'wb') as handler:
+        handler.write(img_data)
 
 
 def save_img_from_response(image_uri: str, filename: str) -> str:
@@ -90,6 +111,39 @@ def download_all():
     print("Done")
 
 
+def super_resolution():
+    """Take a series of 4 pictures then create one high resolution image from it"""
+
+    camera = Camera()  # create camera instance
+    camera_info = camera.info()  # get camera camera_info
+
+    # Save a second while taking the photos
+    camera.do(Actions.setFocusMode, "MF")
+    camera.do("setPostviewImageSize", ["Original"])  # Only the original photo
+    camera_photos = []
+    start = time.time()
+    for photo_iterator in range(1, 4):
+        camera_photos.append(capture(camera))
+    end = time.time()
+    print(f"[INFO] taking pixs took {end - start:.6f} seconds")
+    start = time.time()
+    tmp_iterator = 1
+    local_photos = []
+    for photo in camera_photos:
+        # imutils.url_to_image
+        download_image(photo, f"tmp_img_{tmp_iterator}.jpg")
+        local_photos.append(f"tmp_img_{tmp_iterator}.jpg")
+        tmp_iterator += 1
+    end = time.time()
+    print(f"[INFO] downloading pixs took {end - start:.6f} seconds")
+    # if num % 2 == 0:
+    # for i in range(0, len(camera_photos), 2):
+
+    # for photo in local_photos:
+
+
+
+
 def super_resolution_basic():
     # https://github.com/Rudgas/Superresolution
     capture_and_download("img1.jpg")
@@ -100,7 +154,6 @@ def super_resolution_basic():
     img2 = cv2.imread("img2.jpg")
     img3 = cv2.imread("img3.jpg")
     img4 = cv2.imread("img4.jpg")
-
 
     start = time.time()
     upscaled1 = cv2.resize(
@@ -116,16 +169,16 @@ def super_resolution_basic():
 
     combined_image1 = cv2.addWeighted(upscaled1, 0.5, upscaled2, 0.5, 0)
     combined_image2 = cv2.addWeighted(upscaled3, 0.5, upscaled4, 0.5, 0)
-    combined_image3 = cv2.addWeighted(combined_image1, 0.5, combined_image2, 0.5, 0)
+    combined_image3 = cv2.addWeighted(
+        combined_image1, 0.5, combined_image2, 0.5, 0)
     cv2.imwrite("superres.jpg", combined_image3)
 
     # cv2.imshow('Blended Image', blended_image)
     # cv2.waitKey(0)
 
 
-def alpha_blend(image1, image2, alpha):
-    return cv2.addWeighted(image1, alpha, image2, 1 - alpha, 0)
+
 
 
 if __name__ == '__main__':
-    super_resolution_basic()
+    super_resolution()
