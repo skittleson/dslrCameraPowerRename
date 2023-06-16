@@ -4,6 +4,8 @@ import numpy as np
 import imutils
 import tempfile
 import shutil
+from time import strftime
+from datetime import datetime
 
 
 def align_images(image, template, maxFeatures=500, keepPercent=0.2, debug=False):
@@ -56,45 +58,50 @@ def align_images(image, template, maxFeatures=500, keepPercent=0.2, debug=False)
     return aligned
 
 
-def _blend_photos(img1_path: str, img2_path: str) -> str:
-    """Given two image files, upscale 200%, align, then return a single image"""
+def upscale_blend_images(img1_path: str, img2_path: str) -> str:
+    """Given two image file paths, upscale 200%, align, then return a single image"""
+
     img1 = cv2.imread(img1_path)
     img2 = cv2.imread(img2_path)
-    interpolation = cv2.INTER_CUBIC
+    interpolation = cv2.INTER_LANCZOS4  # cv2.INTER_CUBIC
     scale = 2
     upscaled1 = cv2.resize(
         img1, (img1.shape[1] * scale, img1.shape[0] * scale),	interpolation=interpolation)
     upscaled2 = cv2.resize(
-        img2, (img2.shape[1] * scale, img2.shape[0] * scale),	interpolation=cv2.INTER_CUBIC)
+        img2, (img2.shape[1] * scale, img2.shape[0] * scale),	interpolation=interpolation)
     higher_resolution_img = align_images(upscaled1, upscaled2, debug=False)
-    tmp = tempfile.NamedTemporaryFile(suffix='.JPG').name
-    cv2.imwrite(tmp, higher_resolution_img)
-    return tmp
+    tmp_jpg = tempfile.NamedTemporaryFile(suffix='.JPG').name
+    cv2.imwrite(tmp_jpg, higher_resolution_img)
+    return tmp_jpg
 
 
-def super_res(images: list[str]):
+def super_resolution_multiple(images: list[str]):
     """combine a list of images to one super high resolution image"""
-    
+
+    if len(images) > 4:
+        raise ExceededLimitException()
     images_iter = iter(images)
     high_res_imgs = []
     for (img1, img2) in zip(images_iter, images_iter):
-        print(f'combine {img1} {img2}')
-        high_res_imgs.append(_blend_photos(img1, img2))
-    
-    if len(high_res_imgs) == 1:
+        high_res_imgs.append(upscale_blend_images(img1, img2))
+    if len(high_res_imgs) > 1:
         return high_res_imgs[0]
-    else:
-        return super_res(high_res_imgs)
+    return super_resolution_multiple(high_res_imgs)
 
-class MustBeGeometricSequence(Exception):
+def super_resolution_by_directory(directory):
+    current = os.curdir
+    os.chdir(directory)
+    files = os.listdir()
+    super_resolution_image = super_resolution_multiple(files)
+    os.chdir(current)
+    shutil.move(super_resolution_image, current)
+    print(super_resolution_image)
+
+
+class ExceededLimitException(Exception):
+    """Support for 4 images only"""
     pass
 
 
 if __name__ == '__main__':
-    # cv2.imwrite(f'{os.curdir}/images/super_res.JPG', _blend_photos(
-    #     f'{os.curdir}/images/img1.JPG', f'{os.curdir}/images/img2.JPG'))
-    os.chdir(f'{os.curdir}/images')
-    files = os.listdir(os.curdir)
-    result = super_res(files)
-    print(result)
-
+    super_resolution_by_directory(f'{os.curdir}/images')

@@ -6,6 +6,8 @@ import PIL.ExifTags
 import cv2
 import numpy as np
 import time
+from image_utils import super_resolution_by_directory
+import os
 
 
 def analyze_pix():
@@ -18,7 +20,6 @@ def analyze_pix():
     print(camera.do("getAvailableFocusMode"))
     camera.do(Actions.setFocusMode, "MF")
     camera.do("setPostviewImageSize", ["Original"])
-    # camera.do(Actions.stopLiveview)
     time.sleep(1)
     start = time.time()
     camera.do(Actions.actTakePicture)
@@ -127,57 +128,20 @@ def super_resolution():
     end = time.time()
     print(f"[INFO] taking pixs took {end - start:.6f} seconds")
     start = time.time()
+
+    # save files to temp location
     tmp_iterator = 1
     local_photos = []
     for photo in camera_photos:
         # imutils.url_to_image
-        download_image(photo, f"tmp_img_{tmp_iterator}.jpg")
-        local_photos.append(f"tmp_img_{tmp_iterator}.jpg")
+        path = f"{tmp_iterator}.JPG"
+        download_image(photo, path)
+        local_photos.append(path)
         tmp_iterator += 1
     end = time.time()
     print(f"[INFO] downloading pixs took {end - start:.6f} seconds")
-    # if num % 2 == 0:
-    # for i in range(0, len(camera_photos), 2):
-
-    # for photo in local_photos:
-
-
-
-
-def super_resolution_basic():
-    # https://github.com/Rudgas/Superresolution
-    capture_and_download("img1.jpg")
-    capture_and_download("img2.jpg")
-    capture_and_download("img3.jpg")
-    capture_and_download("img4.jpg")
-    img1 = cv2.imread("img1.jpg")
-    img2 = cv2.imread("img2.jpg")
-    img3 = cv2.imread("img3.jpg")
-    img4 = cv2.imread("img4.jpg")
-
-    start = time.time()
-    upscaled1 = cv2.resize(
-        img1, (img1.shape[1] * 4, img1.shape[0] * 4),	interpolation=cv2.INTER_CUBIC)
-    upscaled2 = cv2.resize(
-        img2, (img2.shape[1] * 4, img2.shape[0] * 4),	interpolation=cv2.INTER_CUBIC)
-    upscaled3 = cv2.resize(
-        img3, (img3.shape[1] * 4, img3.shape[0] * 4),	interpolation=cv2.INTER_CUBIC)
-    upscaled4 = cv2.resize(
-        img4, (img4.shape[1] * 4, img4.shape[0] * 4),	interpolation=cv2.INTER_CUBIC)
-    end = time.time()
-    print(f"[INFO] bicubic resolution took {end - start:.6f} seconds")
-
-    combined_image1 = cv2.addWeighted(upscaled1, 0.5, upscaled2, 0.5, 0)
-    combined_image2 = cv2.addWeighted(upscaled3, 0.5, upscaled4, 0.5, 0)
-    combined_image3 = cv2.addWeighted(
-        combined_image1, 0.5, combined_image2, 0.5, 0)
-    cv2.imwrite("superres.jpg", combined_image3)
-
-    # cv2.imshow('Blended Image', blended_image)
-    # cv2.waitKey(0)
-
-
-
+    super = super_resolution_by_directory(f'{os.curdir}/images')
+    print(super)
 
 
 if __name__ == '__main__':
