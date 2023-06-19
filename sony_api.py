@@ -3,8 +3,6 @@ from libsonyapi.actions import Actions
 import PIL.Image
 import requests
 import PIL.ExifTags
-import cv2
-import numpy as np
 import time
 from image_utils import super_resolution_by_directory
 import os
