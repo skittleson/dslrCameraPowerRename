@@ -14,8 +14,9 @@ class GpsTracker:
         self.port = port
 
     def __del__(self):
-        if self.ser is not None and self.ser.is_open:
-            self.ser.close()
+        if self.ser is not None:
+            if self.ser.is_open:
+                self.ser.close()
             self.ser = None
 
     def get_current_position(self):
