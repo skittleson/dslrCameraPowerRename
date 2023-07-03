@@ -86,6 +86,7 @@ def move() -> None:
 
 if __name__ == '__main__':
     #  bug with video
+    #  D:\MP_ROOT\100ANV01 handle moving these files as well... mp4
     if os.path.isdir(r'D:\DCIM'):
         src = os.path.join("D:", "\\", "DCIM", "100MSDCF")
         count = len(os.listdir(src))
