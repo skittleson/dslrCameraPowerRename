@@ -1,4 +1,4 @@
-import shutil
+from shutil import rmtree, copytree, ignore_patterns, move
 import wmi
 import os
 from time import strftime, localtime
@@ -11,9 +11,9 @@ def copy(src) -> int:
     dst = os.path.join(os.path.expanduser('~'), "a6000Temp")
     if os.path.isdir(dst):
         print("found existing temp folder, delete it")
-        shutil.rmtree(dst)
+        rmtree(dst)
     print(f'{src} to {dst}')
-    shutil.copytree(src, dst)
+    copytree(src, dst, ignore=ignore_patterns('*.THM'))
     return len(os.listdir(dst))
 
 
@@ -55,11 +55,12 @@ def rename(dryrun: bool):
         print(
             f"Move {unique_file_rename} to {unique_file_renames[unique_file_rename]}")
         if not dryrun:
-            shutil.move(os.path.join(dst, unique_file_rename), os.path.join(
+            
+            move(os.path.join(dst, unique_file_rename), os.path.join(
                 dst, unique_file_renames[unique_file_rename]))
 
 
-def move() -> None:
+def move_cloud() -> None:
     """Moves all files from this temp directory to OneDrive where uploads can start"""
     src = os.path.join(os.path.expanduser('~'), "a6000Temp")
 
@@ -68,21 +69,43 @@ def move() -> None:
         '~'), "OneDrive", "SkyDrive camera roll")
     dir_list = os.listdir(src)
     for file in dir_list:
-        shutil.move(os.path.join(src, file), os.path.join(dst, file))
-    shutil.rmtree(src)
+        move(os.path.join(src, file), os.path.join(dst, file))
+    rmtree(src)
+
+
+def picture_transfer():
+    if os.path.isdir(r'D:\DCIM'):
+        src = os.path.join("D:", "\\", "DCIM")
+        for folder in os.listdir(src):
+            subfolder = os.path.join(src, folder)
+            count = len(os.listdir(subfolder))
+            input(f"Found Disk. Files {count}. Press Enter to copy...")
+            copied = copy(subfolder)
+            input(f"Copied {copied}. Press Enter to rename...")
+            rename(False)
+            input(f"Renamed {copied}. Press Enter to move...")
+            move_cloud()
+        
+        print("Done. Delete all the images on camera to prevent duplications.")
+
+
+def video_transfer():
+    if os.path.isdir(r'D:\DCIM'):
+        #  bug this could
+        src = os.path.join("D:", "\\", "MP_ROOT")
+        for folder in os.listdir(src):
+            subfolder = os.path.join(src, folder)
+            count = len(os.listdir(subfolder))
+            input(f"Found Disk. Video Files {count}. Press Enter to copy...")
+            copied = copy(subfolder)
+            input(f"Copied {copied}. Press Enter to rename...")
+            rename(False)
+            input(f"Renamed {copied}. Press Enter to move...")
+            move_cloud()
+        
+        print("Done. Delete all the videos on camera to prevent duplications.")
 
 
 if __name__ == '__main__':
-    #  bug with video
-    #  D:\MP_ROOT\100ANV01 handle moving these files as well... mp4
-    if os.path.isdir(r'D:\DCIM'):
-        src = os.path.join("D:", "\\", "DCIM", "100MSDCF")
-        count = len(os.listdir(src))
-        input(f"Found Disk. Files {count}. Press Enter to copy...")
-        copied = copy(src)
-        input(f"Copied {copied}. Press Enter to rename...")
-        rename(False)
-        input(f"Renamed {copied}. Press Enter to move...")
-        move()
-        print("Done. Delete all the images on camera to prevent duplications.")
-
+    video_transfer()
+    picture_transfer()
